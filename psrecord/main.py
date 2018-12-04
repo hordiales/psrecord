@@ -146,6 +146,7 @@ def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
     log['cpu'] = []
     log['mem_real'] = []
     log['mem_virtual'] = []
+    log['io'] = []
 
     try:
 
@@ -181,6 +182,15 @@ def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
             current_mem_real = current_mem.rss / 1024. ** 2
             current_mem_virtual = current_mem.vms / 1024. ** 2
 
+            # Get I/O information
+            io_counters = pr.io_counters() 
+            disk_usage_process = io_counters[2] + io_counters[3] # read_bytes + write_bytes
+            # disk_io_counter = psutil.disk_io_counters()
+            # disk_total = disk_io_counter[2] + disk_io_counter[3] # read_bytes + write_bytes
+            # print("Disk", disk_usage_process/disk_total * 100)
+            current_io = disk_usage_process
+            #current_io = disk_usage_process/disk_total * 100
+
             # Get information for children
             if include_children:
                 for child in all_children(pr):
@@ -209,6 +219,7 @@ def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
                 log['cpu'].append(current_cpu)
                 log['mem_real'].append(current_mem_real)
                 log['mem_virtual'].append(current_mem_virtual)
+                log['io'].append(current_io)
 
     except KeyboardInterrupt:  # pragma: no cover
         pass
@@ -229,7 +240,6 @@ def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
 
             ax.set_ylabel('CPU (%)', color='r')
             ax.set_xlabel('time (s)')
-
             if max_cpu_scale:            
                 #Only available in python 3
                 #print("CPU count: %i"%os.cpu_count())
@@ -239,12 +249,19 @@ def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
                 # print("scale %f"%( max(log['cpu']) * 1.2) )
                 ax.set_ylim(0., max(log['cpu']) * 1.2)
 
-            ax2 = ax.twinx()
 
-            ax2.plot(log['times'], log['mem_real'], '-', lw=1, color='b')
-            ax2.set_ylim(0., max(log['mem_real']) * 1.2)
-
-            ax2.set_ylabel('Real Memory (MB)', color='b')
+            if include_io:
+                #I/O
+                ax3 = ax.twinx()
+                ax3.plot(log['times'], log['io'], '-', lw=1, color='g')
+                ax3.set_ylim(0., max(log['io']) * 1.2)
+                ax3.set_ylabel('I/O (bytes)', color='g')
+            else:
+                #memory
+                ax2 = ax.twinx()
+                ax2.plot(log['times'], log['mem_real'], '-', lw=1, color='b')
+                ax2.set_ylim(0., max(log['mem_real']) * 1.2)
+                ax2.set_ylabel('Real Memory (MB)', color='b')
 
             ax.grid()
 
