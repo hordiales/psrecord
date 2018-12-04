@@ -28,6 +28,7 @@ from __future__ import (unicode_literals, division, print_function,
 
 import time
 import argparse
+import os
 
 
 def get_percent(process):
@@ -63,7 +64,7 @@ def all_children(pr):
 def main():
 
     parser = argparse.ArgumentParser(
-        description='Record CPU and memory usage for a process')
+        description='(fork) Record CPU and memory usage for a process')
 
     parser.add_argument('process_id_or_command', type=str,
                         help='the process id or command')
@@ -88,6 +89,14 @@ def main():
                         help='include sub-processes in statistics (results '
                              'in a slower maximum sampling rate).',
                         action='store_true')
+    
+    parser.add_argument('--include-io',
+                        help='include I/O statistics',
+                        action='store_true')
+    
+    parser.add_argument('--max-cpu-scale',
+                        help='Use max CPU scale for multi-cores cpus',
+                        action='store_true')
 
     args = parser.parse_args()
 
@@ -105,14 +114,14 @@ def main():
         pid = sprocess.pid
 
     monitor(pid, logfile=args.log, plot=args.plot, duration=args.duration,
-            interval=args.interval, include_children=args.include_children)
+            interval=args.interval, include_children=args.include_children, include_io=args.include_io, max_cpu_scale=args.max_cpu_scale)
 
     if sprocess is not None:
         sprocess.kill()
 
 
 def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
-            include_children=False):
+            include_children=False, include_io=True, max_cpu_scale=False):
 
     # We import psutil here so that the module can be imported even if psutil
     # is not present (for example if accessing the version)
@@ -220,7 +229,15 @@ def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
 
             ax.set_ylabel('CPU (%)', color='r')
             ax.set_xlabel('time (s)')
-            ax.set_ylim(0., max(log['cpu']) * 1.2)
+
+            if max_cpu_scale:            
+                #Only available in python 3
+                #print("CPU count: %i"%os.cpu_count())
+                cpu_count = int(os.cpu_count())
+                ax.set_ylim(0., 100*cpu_count )
+            else:
+                # print("scale %f"%( max(log['cpu']) * 1.2) )
+                ax.set_ylim(0., max(log['cpu']) * 1.2)
 
             ax2 = ax.twinx()
 
