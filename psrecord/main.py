@@ -184,6 +184,9 @@ def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
 
             # Get I/O information
             io_counters = pr.io_counters() 
+            # print(io_counters)
+            # pio(read_count=686622, write_count=882937, read_bytes=93016064, write_bytes=613756928, read_chars=966944793, write_chars=655444485)
+            #disk_usage_process = io_counters[0] + io_counters[2] # read_bytes + write_bytes
             disk_usage_process = io_counters[2] + io_counters[3] # read_bytes + write_bytes
             # disk_io_counter = psutil.disk_io_counters()
             # disk_total = disk_io_counter[2] + disk_io_counter[3] # read_bytes + write_bytes
