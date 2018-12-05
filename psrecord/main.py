@@ -147,6 +147,8 @@ def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
     log['mem_real'] = []
     log['mem_virtual'] = []
     log['io'] = []
+    log['io_read'] = []
+    log['io_write'] = []
 
     try:
 
@@ -184,15 +186,18 @@ def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
 
             # Get I/O information
             io_counters = pr.io_counters() 
-            # print(io_counters)
-            # pio(read_count=686622, write_count=882937, read_bytes=93016064, write_bytes=613756928, read_chars=966944793, write_chars=655444485)
-            #disk_usage_process = io_counters[0] + io_counters[2] # read_bytes + write_bytes
-            disk_usage_process = io_counters[2] + io_counters[3] # read_bytes + write_bytes
+            # Example: pio(read_count=686622, write_count=882937, read_bytes=93016064, write_bytes=613756928, read_chars=966944793, write_chars=655444485)
+            current_io_read = io_counters[2] / 1024. ** 2
+            current_io_write = io_counters[3] / 1024. ** 2
+            # current_io = disk_usage_process / 1024.** 2  # mb
+            
+            # as % of total 
+            # disk_usage_process = io_counters[2] + io_counters[3] # read_bytes + write_bytes
             # disk_io_counter = psutil.disk_io_counters()
             # disk_total = disk_io_counter[2] + disk_io_counter[3] # read_bytes + write_bytes
             # print("Disk", disk_usage_process/disk_total * 100)
-            current_io = disk_usage_process
-            #current_io = disk_usage_process/disk_total * 100
+            # current_io = disk_usage_process/disk_total * 100
+
 
             # Get information for children
             if include_children:
@@ -222,7 +227,9 @@ def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
                 log['cpu'].append(current_cpu)
                 log['mem_real'].append(current_mem_real)
                 log['mem_virtual'].append(current_mem_virtual)
-                log['io'].append(current_io)
+                # log['io'].append(current_io)
+                log['io_read'].append(current_io_read)
+                log['io_write'].append(current_io_write)
 
     except KeyboardInterrupt:  # pragma: no cover
         pass
@@ -234,12 +241,13 @@ def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
 
         # Use non-interactive backend, to enable operation on headless machines
         import matplotlib.pyplot as plt
+
         with plt.rc_context({'backend': 'Agg'}):
 
             fig = plt.figure()
             ax = fig.add_subplot(1, 1, 1)
 
-            ax.plot(log['times'], log['cpu'], '-', lw=1, color='r')
+            ax.plot(log['times'], log['cpu'], '-', lw=1, color='r', label='CPU (%)')
 
             ax.set_ylabel('CPU (%)', color='r')
             ax.set_xlabel('time (s)')
@@ -254,13 +262,19 @@ def monitor(pid, logfile=None, plot=None, duration=None, interval=None,
 
 
             if include_io:
-                #I/O
+                #memory + I/O
                 ax3 = ax.twinx()
-                ax3.plot(log['times'], log['io'], '-', lw=1, color='g')
-                ax3.set_ylim(0., max(log['io']) * 1.2)
-                ax3.set_ylabel('I/O (bytes)', color='g')
+                ax3.plot(log['times'], log['mem_real'], '-', lw=1, color='b', label='RAM (MB)')
+                ax3.plot(log['times'], log['io_read'], '-', lw=1, color='g', label='I/O Read')
+                ax3.plot(log['times'], log['io_write'], '-', lw=1, color='m', label='I/O Write')
+                ax3.set_ylim(0., max(max(log['mem_real']), max(log['io_read']), max(log['io_write'])) * 1.2)
+                # ax3.set_ylabel('RAM (blue) - I/O read (green) - I/O write (magenta)] (MB)', color='k')
+                ax3.set_ylabel('(MB)', color='k')
+                # ax3.grid(True)
+                ax3.legend(title="MB scale", fancybox=True)
+                ax.legend(title="% scale", fancybox=True)
             else:
-                #memory
+                #only memory
                 ax2 = ax.twinx()
                 ax2.plot(log['times'], log['mem_real'], '-', lw=1, color='b')
                 ax2.set_ylim(0., max(log['mem_real']) * 1.2)

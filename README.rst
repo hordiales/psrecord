@@ -1,3 +1,15 @@
+Fork with I/O and scale parameters support  
+==========================================
+
+Example:
+    psrecord {PROCESS_ID} --interval 1 --plot plot1.png --include-io
+
+
+.. figure:: ./plot1.png
+   :align: center
+   :alt: plot.png
+
+
 |Build Status| |Coverage Status|
 
 About
