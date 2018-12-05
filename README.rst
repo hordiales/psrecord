@@ -1,14 +1,27 @@
 Fork with I/O and scale parameters support  
 ==========================================
 
-Example:
-    psrecord {PROCESS_ID} --interval 1 --plot plot1.png --include-io
+Requirements: Python3 (for cpu count)
+
+Install:
+    $ sudo python3 setup.py install
+
+Example with I/O:
+    $ psrecord {PROCESS_ID} --interval 1 --plot plot1.png --include-io
 
 
 .. figure:: ./plot1.png
    :align: center
    :alt: plot.png
 
+
+Example using fixed cpu scale (for multicore):
+
+    $ sudo psrecord {PROCESS_ID} --interval 1 --plot plot1.png --include-io --max-cpu-scale
+
+.. figure:: ./plot_full_cpu_scale.png
+   :align: center
+   :alt: plot_full_cpu_scale.png
 
 |Build Status| |Coverage Status|
 
